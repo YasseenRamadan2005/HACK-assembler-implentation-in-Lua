@@ -84,7 +84,6 @@ function Convert_Ainstruction(a)
 end
 
 function Convert_Cinstruction(a)
-    --MD=M+1
     --Split the instruction into 3 parts: the comp_parts, dest_parts, and jump_parts
     local comp_parts = ''
     local dest_parts = ''
@@ -127,9 +126,6 @@ function Convert_Cinstruction(a)
     end
     Completed_Bits = ''
     for i = 1, 4 do
-        if Bits[i] == nil then
-            print(i)
-        end
         Completed_Bits = Completed_Bits .. Bits[i]
     end
     return Completed_Bits
