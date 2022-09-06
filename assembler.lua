@@ -526,15 +526,11 @@ for line in Lines do
     if string.sub(line, 1, 1) == '@' then
         Machinecode = Machinecode .. Convert_Ainstruction(line) .. '\n'
     else if string.sub(line, 1, 1) ~= '(' then
-            for key, value in pairs(C_instructions) do
-                if (line == key) then
-                    Machinecode = Machinecode .. value .. '\n'
-                    break
-                end
-            end
+            Machinecode = Machinecode .. C_instructions[line] .. '\n'
         end
     end
 end
+
 Machinecode = string.sub(Machinecode, 1, -2)
 Dothack:close()
 Dothack = io.open(File_output_name, 'w')
