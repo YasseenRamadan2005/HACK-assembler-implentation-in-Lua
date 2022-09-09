@@ -475,34 +475,37 @@ File:close()
 
 --Create the Dothack file
 Dothack = io.open(File_output_name, 'w')
+Parsed = string.gsub(Parsed, " ", "")
+-- print(Parsed)
 Dothack:write(Parsed)
 Dothack:close()
 
 --lines
-PureInstructions = ''
+
+
+PureInstructions = ""
+Dothack = io.open(File_output_name, 'w')
+Dothack:write(Parsed)
+Dothack:close()
 Dothack = io.open(File_output_name, 'r')
 Lines = Dothack:lines()
 for line in Lines do
-    if line ~= '' and string.sub(line, 1, 2) ~= '//' then
-        for i = 1, #line do
-            if string.sub(line, i, i) ~= ' ' then
-                if string.sub(line, i, i + 1) == '//' then
-                    break
-                end
-                PureInstructions = PureInstructions .. string.sub(line, i, i)
-            end
+    -- print(line)
+    if line ~= "\n" and string.sub(line, 1, 2) ~= '//' and line ~= '' then
+        local i = 1
+        while string.sub(line, i, i + 1) ~= "//" and i < #line + 1 do
+            PureInstructions = PureInstructions .. string.sub(line, i, i)
+            i = i + 1
         end
         PureInstructions = PureInstructions .. '\n'
     end
 end
-PureInstructions = string.sub(PureInstructions, 1, -2)
--- print(PureInstructions)
+
 Dothack:close()
 
 Dothack = io.open(File_output_name, 'w')
 Dothack:write(PureInstructions)
 Dothack:close()
-
 --Adds line numbers and labels to Ainstructions
 Dothack = io.open(File_output_name, 'r')
 Lines = Dothack:lines()
@@ -523,8 +526,10 @@ Machinecode = ''
 Dothack = io.open(File_output_name, 'r')
 Lines = Dothack:lines()
 for line in Lines do
+    -- print(line)
     if string.sub(line, 1, 1) == '@' then
         Machinecode = Machinecode .. Convert_Ainstruction(line) .. '\n'
+        -- print(line, Convert_Ainstruction(line))
     else if string.sub(line, 1, 1) ~= '(' then
             Machinecode = Machinecode .. C_instructions[line] .. '\n'
         end
@@ -535,5 +540,4 @@ Machinecode = string.sub(Machinecode, 1, -2)
 Dothack:close()
 Dothack = io.open(File_output_name, 'w')
 Dothack:write(Machinecode)
--- print(Machinecode)
 Dothack:close()
