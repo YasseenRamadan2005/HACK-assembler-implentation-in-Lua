@@ -465,7 +465,7 @@ end
 
 require "lfs"
 
-File_output_name = string.sub(arg[2], 1, -4) .. 'hack'
+File_output_name = 'temp' .. string.sub(arg[2], 1, -4) .. 'hack'
 lfs.chdir(arg[1])
 --remove 0D
 
@@ -490,17 +490,31 @@ Dothack:close()
 Dothack = io.open(File_output_name, 'r')
 Lines = Dothack:lines()
 for line in Lines do
+    line = string.gsub(line, " ", "")
     -- print(line)
-    if line ~= "\n" and string.sub(line, 1, 2) ~= '//' and line ~= '' then
-        local i = 1
-        while string.sub(line, i, i + 1) ~= "//" and i < #line + 1 do
-            PureInstructions = PureInstructions .. string.sub(line, i, i)
-            i = i + 1
-        end
-        PureInstructions = PureInstructions .. '\n'
-    end
-end
+    for i = 1, #line + 1 do
+        if string.sub(line, i, i) ~= "/" then
 
+            PureInstructions = PureInstructions .. string.sub(line, i, i)
+
+        else
+            PureInstructions = PureInstructions .. "\n"
+            break
+        end
+        if i == #line then
+            PureInstructions = PureInstructions .. "\n"
+        end
+    end
+    -- if line ~= "\n" and string.sub(line, 1, 2) ~= '//' and line ~= '' then
+    --     local i = 1
+    --     while string.sub(line, i, i + 1) ~= "//" and i < #line + 1 do
+    --         PureInstructions = PureInstructions .. string.sub(line, i, i)
+    --         i = i + 1
+    --     end
+    --     PureInstructions = PureInstructions .. '\n'
+    -- end
+end
+-- print(PureInstructions)
 Dothack:close()
 
 Dothack = io.open(File_output_name, 'w')
@@ -524,20 +538,19 @@ Machinecode = ''
 
 --Assembles to Machinecode
 Dothack = io.open(File_output_name, 'r')
+No = io.open(string.sub(arg[2], 1, -4) .. 'hack', 'w')
 Lines = Dothack:lines()
 for line in Lines do
-    -- print(line)
-    if string.sub(line, 1, 1) == '@' then
-        Machinecode = Machinecode .. Convert_Ainstruction(line) .. '\n'
-        -- print(line, Convert_Ainstruction(line))
-    else if string.sub(line, 1, 1) ~= '(' then
-            Machinecode = Machinecode .. C_instructions[line] .. '\n'
+    if line ~= "\n" and line ~= "" then
+        if string.sub(line, 1, 1) == '@' then
+            No:write(Convert_Ainstruction(line) .. "\n")
+        else if string.sub(line, 1, 1) ~= '(' then
+                No:write(C_instructions[line].. "\n")
+            end
         end
     end
 end
 
-Machinecode = string.sub(Machinecode, 1, -2)
 Dothack:close()
-Dothack = io.open(File_output_name, 'w')
-Dothack:write(Machinecode)
-Dothack:close()
+No:close()
+os.remove(File_output_name)
