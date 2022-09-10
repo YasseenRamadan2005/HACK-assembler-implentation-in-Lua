@@ -426,7 +426,7 @@ C_instructions = {
     ['A=A+1'] = '1110110111100000',
     ['A=M+1'] = '1111110111100000',
     ['A=D+1'] = '1110011111100000',
-    ['A=-1'] = '1110111010100000',
+    -- ['A=-1'] = '1110111010100000',
     ['A=A-1'] = '1110110010100000',
     ['A=M-1'] = '1111110010100000'
 }
@@ -491,32 +491,18 @@ Dothack = io.open(File_output_name, 'r')
 Lines = Dothack:lines()
 for line in Lines do
     line = string.gsub(line, " ", "")
-    -- print(line)
-    for i = 1, #line + 1 do
-        if string.sub(line, i, i) ~= "/" then
-
-            PureInstructions = PureInstructions .. string.sub(line, i, i)
-
+    if string.sub(line, 1, 2) ~= "//" then
+        if string.match(line, '//') ~= nil then
+            local a, b = string.find(line, "//", 1, true)
+            PureInstructions = PureInstructions .. string.sub(line, 1, a - 1) .. "\n"
         else
-            PureInstructions = PureInstructions .. "\n"
-            break
-        end
-        if i == #line then
-            PureInstructions = PureInstructions .. "\n"
+            PureInstructions = PureInstructions .. line .. "\n"
         end
     end
-    -- if line ~= "\n" and string.sub(line, 1, 2) ~= '//' and line ~= '' then
-    --     local i = 1
-    --     while string.sub(line, i, i + 1) ~= "//" and i < #line + 1 do
-    --         PureInstructions = PureInstructions .. string.sub(line, i, i)
-    --         i = i + 1
-    --     end
-    --     PureInstructions = PureInstructions .. '\n'
-    -- end
-end
--- print(PureInstructions)
-Dothack:close()
 
+end
+Dothack:close()
+PureInstructions = string.gsub(PureInstructions, "\n\n", "")
 Dothack = io.open(File_output_name, 'w')
 Dothack:write(PureInstructions)
 Dothack:close()
@@ -526,14 +512,13 @@ Lines = Dothack:lines()
 Line_number = 0
 V_Values = 15
 for line in Lines do
-    if string.sub(line, 1, 1) ~= '(' then
-        Line_number = Line_number + 1
-    else
+    if string.sub(line, 1, 1) == '(' and line ~= "" and line ~= "\n" then
         A_Instructions[string.sub(line, 2, -2)] = Line_number
+    else
+        Line_number = Line_number + 1
     end
 end
 Dothack:close()
-
 Machinecode = ''
 
 --Assembles to Machinecode
@@ -545,12 +530,11 @@ for line in Lines do
         if string.sub(line, 1, 1) == '@' then
             No:write(Convert_Ainstruction(line) .. "\n")
         else if string.sub(line, 1, 1) ~= '(' then
-                No:write(C_instructions[line].. "\n")
+                No:write(C_instructions[line] .. "\n")
             end
         end
     end
 end
-
 Dothack:close()
 No:close()
-os.remove(File_output_name)
+-- os.remove(File_output_name)
