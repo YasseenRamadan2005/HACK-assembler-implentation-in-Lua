@@ -5,3 +5,6 @@ This is my first non-trivial coding project, so any helpful advice is appreciate
 
 PS:
   The Lua program needs the LuaFileSystem library. You can install it by doing - luarocks install luafilesystem
+
+
+Edit: Got it to less than a second for Pong :)
