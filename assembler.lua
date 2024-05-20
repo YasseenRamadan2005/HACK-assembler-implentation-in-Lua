@@ -430,111 +430,96 @@ C_instructions = {
     ['A=A-1'] = '1110110010100000',
     ['A=M-1'] = '1111110010100000'
 }
+local lfs = require "lfs"
+local bit = bit32 or require("bit")
 
-function To16bitbinary(number)
-    local bits = '0'
-    for i = 14, 0, -1 do
-        if number > 2 ^ i - 1 then
-            number = number - 2 ^ i
-            bits = bits .. '1'
-        else
-            bits = bits .. '0'
-        end
+-- Converts a number to a 16-bit binary string
+local function To16bitbinary(number)
+    local bits = ''
+    for i = 15, 0, -1 do
+        bits = bits .. ((bit.band(number, bit.lshift(1, i)) ~= 0) and '1' or '0')
     end
     return bits
 end
 
-function Convert_Ainstruction(a)
-    --Check if R0-15, Ainstruction, Address, or Variable
-    if tonumber(string.sub(a, 2, -1)) then
-        return To16bitbinary(tonumber(string.sub(a, 2, -1)))
-    else if tonumber(string.sub(a, 3, -1)) and string.sub(a, 2, 2) == 'R' then
-            return To16bitbinary(tonumber(string.sub(a, 3, -1)))
-        else
-            for key, values in pairs(A_Instructions) do
-                if string.sub(a, 2, -1) == key then
-                    return To16bitbinary(values)
-                end
-            end
-            A_Instructions[string.sub(a, 2, -1)] = V_Values + 1
-            V_Values = V_Values + 1
-            return To16bitbinary(A_Instructions[string.sub(a, 2, -1)])
-        end
-    end
-end
-
-require "lfs"
-
-File_output_name = 'temp' .. string.sub(arg[2], 1, -4) .. 'hack'
-lfs.chdir(arg[1])
---remove 0D
-
-File = io.open(arg[2], 'rb')
-Parsed = string.gsub(File:read('*a'), "\r\n", "\n")
-File:close()
-
---Create the Dothack file
-Dothack = io.open(File_output_name, 'w')
-Parsed = string.gsub(Parsed, " ", "")
--- print(Parsed)
-Dothack:write(Parsed)
-Dothack:close()
-
---lines
-
-
-PureInstructions = ""
-Dothack = io.open(File_output_name, 'w')
-Dothack:write(Parsed)
-Dothack:close()
-Dothack = io.open(File_output_name, 'r')
-Lines = Dothack:lines()
-for line in Lines do
-    line = string.gsub(line, " ", "")
-    if string.sub(line, 1, 2) ~= "//" then
-        if string.match(line, '//') ~= nil then
-            local a, b = string.find(line, "//", 1, true)
-            PureInstructions = PureInstructions .. string.sub(line, 1, a - 1) .. "\n"
-        else
-            PureInstructions = PureInstructions .. line .. "\n"
-        end
-    end
-
-end
-Dothack:close()
-PureInstructions = string.gsub(PureInstructions, "\n\n", "")
-Dothack = io.open(File_output_name, 'w')
-Dothack:write(PureInstructions)
-Dothack:close()
---Adds line numbers and labels to Ainstructions
-Dothack = io.open(File_output_name, 'r')
-Lines = Dothack:lines()
-Line_number = 0
-V_Values = 15
-for line in Lines do
-    if string.sub(line, 1, 1) == '(' and line ~= "" and line ~= "\n" then
-        A_Instructions[string.sub(line, 2, -2)] = Line_number
+-- Converts an A-instruction to a binary string
+local function Convert_Ainstruction(a)
+    local addr = string.sub(a, 2)
+    local num = tonumber(addr)
+    if num then
+        return To16bitbinary(num)
+    elseif addr:match('^R%d+$') then
+        -- Matches register names like R0, R1, ..., R15
+        -- ^R: Starts with 'R'
+        -- %d+: Followed by one or more digits
+        num = tonumber(string.sub(addr, 2))
+        return To16bitbinary(num)
     else
-        Line_number = Line_number + 1
+        if not A_Instructions[addr] then
+            V_Values = V_Values + 1
+            A_Instructions[addr] = V_Values
+        end
+        return To16bitbinary(A_Instructions[addr])
     end
 end
-Dothack:close()
-Machinecode = ''
 
---Assembles to Machinecode
-Dothack = io.open(File_output_name, 'r')
-No = io.open(string.sub(arg[2], 1, -4) .. 'hack', 'w')
-Lines = Dothack:lines()
-for line in Lines do
-    if line ~= "\n" and line ~= "" then
-        if string.sub(line, 1, 1) == '@' then
-            No:write(Convert_Ainstruction(line) .. "\n")
-        else if string.sub(line, 1, 1) ~= '(' then
-                No:write(C_instructions[line] .. "\n")
-            end
+-- Main processing
+local function process_file(input_path, output_path)
+    -- Change directory to the input file's directory
+    lfs.chdir(input_path)
+
+    -- Read and clean the input file
+    local file = io.open(arg[2], 'rb')
+    local parsed = file:read('*a'):gsub("\r\n", "\n"):gsub(" ", "")
+    file:close()
+
+    -- Remove comments and empty lines
+    parsed = parsed:gsub("%s*//.-\n", "\n"):gsub("\n+", "\n")
+    -- %s*//.-\n: Removes single-line comments
+    -- %s*: Matches any whitespace characters (0 or more)
+    -- //: Matches double slashes (comment start)
+    -- .-: Matches any character (0 or more) non-greedily
+    -- \n: Matches a newline character
+
+    -- \n+: Replaces multiple newlines with a single newline
+
+    -- First pass: handle labels
+    local line_number = 0
+    A_Instructions = {}
+    V_Values = 15
+    for line in parsed:gmatch("[^\n]+") do
+        -- [^\n]+: Matches any sequence of characters that are not newlines
+        if line:match("^%(") then
+            -- ^%(: Matches lines that start with an opening parenthesis (label definition)
+            local label = line:match("^%((.+)%)$")
+            -- %((.+)%): Captures the label name inside parentheses
+            -- ^%(: Opening parenthesis at the start of the line
+            -- (.+): Captures one or more of any character (greedy)
+            -- %): Closing parenthesis
+            A_Instructions[label] = line_number
+        else
+            line_number = line_number + 1
         end
     end
+
+    -- Second pass: generate machine code
+    local output_file = io.open(output_path, 'w')
+    for line in parsed:gmatch("[^\n]+") do
+        if line:match("^@") then
+            -- ^@: Matches lines that start with '@' (A-instruction)
+            output_file:write(Convert_Ainstruction(line) .. "\n")
+        elseif not line:match("^%(") then
+            -- ^%(: Excludes lines that start with '(' (labels)
+            output_file:write(C_instructions[line] .. "\n")
+        end
+    end
+    output_file:close()
 end
-Dothack:close()
-No:close()
-os.remove(File_output_name)
+
+-- Determine input and output file paths
+local input_file = arg[2]
+local output_file = input_file:gsub("%.asm$", ".hack")
+-- %.asm$: Matches '.asm' at the end of the string and replaces it with '.hack'
+-- %.: Escapes the dot character
+-- asm$: Matches 'asm' at the end of the string
+process_file(arg[1], output_file)
