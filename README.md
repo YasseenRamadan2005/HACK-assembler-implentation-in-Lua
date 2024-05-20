@@ -8,3 +8,5 @@ PS:
 
 
 Edit: Got it to less than a second for Pong :)
+
+Edit2: Now .048 seconds. Use sudo luarocks install bitlib to install the bitshifting library
