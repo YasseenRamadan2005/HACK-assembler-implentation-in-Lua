@@ -10,3 +10,7 @@ PS:
 Edit: Got it to less than a second for Pong :)
 
 Edit2: Now .048 seconds. Use sudo luarocks install bitlib to install the bitshifting library
+
+Documentation here:
+
+https://yasseenramadan2005.github.io/nand2tetris/2024/06/12/hack-assembler.html
