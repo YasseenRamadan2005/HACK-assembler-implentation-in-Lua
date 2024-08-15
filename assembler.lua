@@ -465,11 +465,12 @@ end
 
 -- Main processing
 local function process_file(input_path, output_path)
+    print("Proccessing:\t" .. input_path)
     -- Change directory to the input file's directory
     lfs.chdir(input_path)
 
     -- Read and clean the input file
-    local file = io.open(arg[2], 'rb')
+    local file = io.open(input_path, 'rb')
     local parsed = file:read('*a'):gsub("\r\n", "\n"):gsub(" ", "")
     file:close()
 
@@ -482,7 +483,6 @@ local function process_file(input_path, output_path)
     -- \n: Matches a newline character
 
     -- \n+: Replaces multiple newlines with a single newline
-
     -- First pass: handle labels
     local line_number = 0
     A_Instructions = {}
@@ -516,10 +516,47 @@ local function process_file(input_path, output_path)
     output_file:close()
 end
 
--- Determine input and output file paths
-local input_file = arg[2]
-local output_file = input_file:gsub("%.asm$", ".hack")
--- %.asm$: Matches '.asm' at the end of the string and replaces it with '.hack'
--- %.: Escapes the dot character
--- asm$: Matches 'asm' at the end of the string
-process_file(arg[1], output_file)
+-- Helper function to process a single file
+local function process_single_file(input_file)
+    local output_file = input_file:gsub("%.asm$", ".hack")
+    -- Process the file
+    process_file(input_file, output_file)
+    print("Assembled " .. input_file .. " -> " .. output_file .. "\n")
+end
+
+-- Function to process all .asm files in a directory
+local function process_directory(dir_path)
+    for file in lfs.dir(dir_path) do
+        if file:match("%.asm$") then
+            local input_file = dir_path .. file
+            process_single_file(input_file)
+        end
+    end
+end
+
+-- Main function to determine input type (file or directory) and process accordingly
+local function main(arg)
+    local path = arg[1]
+
+    if not path then
+        print("Error: No input path provided.")
+        return
+    end
+
+    local attr = lfs.attributes(path)
+
+    if not attr then
+        print("Error: Path does not exist or cannot be accessed.")
+        return
+    end
+
+    if attr.mode == "file" then
+        process_single_file(path)
+    elseif attr.mode == "directory" then
+        process_directory(path)
+    else
+        print("Error: Unsupported path type.")
+    end
+end
+
+main(arg)
